@@ -37,3 +37,16 @@ spec:
       imagePullSecrets:
         - name: binyam-dr-cred
       restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mpsa-voice-auth-api
+  namespace: mpesa-vybe
+spec:
+  selector:
+    app: mpsa-voice-auth-api
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
