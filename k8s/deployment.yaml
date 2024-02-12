@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: mpsa-voice-auth-api
+  name: mpsa-voice-auth-api
+  namespace: mpesa-vybe
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mpsa-voice-auth-api
+  template:
+    metadata:
+      labels:
+        app: mpsa-voice-auth-api
+        application: mpsa-voice-auth-api
+    spec:
+      containers:
+        - image: mpsa-voice-auth-api:1.0.0
+          name: mpsa-voice-auth-api
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+              name: server
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: postgres-config
+          resources:
+            requests:
+              memory: "500Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "2"
+      imagePullSecrets:
+        - name: binyam-dr-cred
+      restartPolicy: Always
