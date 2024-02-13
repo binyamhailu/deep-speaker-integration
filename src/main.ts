@@ -4,6 +4,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
   console.log('Database Configuration:');
   console.log('Host:', configService.get<string>('POSTGRES_HOST'));
   console.log('Port:', configService.get<number>('POSTGRES_PORT'));
