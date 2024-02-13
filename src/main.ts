@@ -3,7 +3,12 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 
+require('dotenv').config();
+
 async function bootstrap() {
+  console.log("starting ,  checking ENV Vatiables")
+  console.log("DU_USER:", process.env.POSTGRES_VYBE_USER)
+  console.log("DU_POSTGRES_VYBE_PASSWORD", process.env.POSTGRES_VYBE_PASSWORD)
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
   console.log('Database Configuration:');
