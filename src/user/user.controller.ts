@@ -76,16 +76,45 @@ export class UserController {
       if (!phoneNumber) {
         throw new BadRequestException('Phone Number is required');
       }
-      const user = await this.userService.getUser(phoneNumber)
-      if (!user) {
-        return new NotFoundException("User Not Found  With Phone Number", phoneNumber);
+      let userProfile;
+      userProfile = await this.userService.getUser(phoneNumber)
+      if (!userProfile) {
+        const data = JSON.stringify({
+          "locale": "en-us"
+        });
+  
+        const config = {
+          method: 'post',
+          maxBodyLength: Infinity,
+          url: 'https://eastus.api.cognitive.microsoft.com/speaker-recognition/verification/text-independent/profiles?api-version=2021-09-05',
+          headers: {
+            'Ocp-Apim-Subscription-Key': '050acd7a1d3c4f0ab8123516e708b8f5',
+            'Content-Type': 'application/json'
+          },
+          data: data
+        };
+  
+        const response = await axios.request(config);
+        console.log("response-creating profile", response.data)
+  
+        const profileId = response.data.profileId;
+        const enrollmentStatus = response.data.enrollmentStatus;
+        const profileStatus = response.data.profileStatus;
+        const user: User = {
+          phoneNumber: phoneNumber,
+          profileId: profileId,
+          enrollmentStatus: enrollmentStatus,
+          profileStatus: profileStatus,
+          id: 0
+        }
+         userProfile = await this.userService.create(user);
       }
 
       const data = file.buffer;
       const config = {
         method: 'post',
         maxBodyLength: Infinity,
-        url: `https://eastus.api.cognitive.microsoft.com/speaker-recognition/verification/text-independent/profiles/${user.profileId}/enrollments?api-version=2021-09-05&ignoreMinLength=true`,
+        url: `https://eastus.api.cognitive.microsoft.com/speaker-recognition/verification/text-independent/profiles/${userProfile.profileId}/enrollments?api-version=2021-09-05&ignoreMinLength=true`,
         headers: {
           'Ocp-Apim-Subscription-Key': '050acd7a1d3c4f0ab8123516e708b8f5',
           'Content-Type': 'audio/wav; codecs=audio/pcm'
