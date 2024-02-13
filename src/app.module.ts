@@ -6,6 +6,8 @@ import { User } from './user/entities/user.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
+require('dotenv').config();
+
 @Module({
   imports: [
     ConfigModule.forRoot(),
