@@ -21,7 +21,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         host: "10.3.141.204",
         port: 5432,
         database: "mpesa_vybe",
-        username: "POSTGRES_VYBE_DB_URL",
+        username: "POSTGRES_VYBE_USER",
         password: "POSTGRESS_VYBE_PASSWORD",
         entities: [User],
         synchronize: true,
