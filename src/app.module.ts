@@ -22,7 +22,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         port: 5432,
         database: "mpesa_vybe",
         username: process.env.POSTGRES_VYBE_USER,
-        password: "rEZEWaydRAnk",
+        password: Buffer.from(process.env.POSTGRES_VYBE_PASSWORD, 'base64').toString(),
         entities: [User],
         synchronize: true,
       }),
