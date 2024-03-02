@@ -26,3 +26,9 @@ services:
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mypassword
       POSTGRES_DB: mydatabase
+
+  deep-speaker:
+    image: binwelbeck/deep-speaker
+    restart: always
+    ports:
+      - '5000:5000'
