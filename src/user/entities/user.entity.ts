@@ -17,4 +17,10 @@ export class User {
         nullable: true
     })
     profileStatus: string
+
+    @Column({
+        type: 'bytea',
+        nullable: true
+    })
+    enrolledVoice: Buffer;
 }

@@ -1,67 +1,19 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UploadedFile, UseInterceptors, NotFoundException, ConflictException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto, UserProfileResponseDTO } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
 import axios from 'axios';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { User } from './entities/user.entity';
-import { CustomNotFoundException } from './exception/NotFoundException';
+import * as FormData from 'form-data';
 
 @Controller('user')
 export class UserController {
 
   constructor(private readonly userService: UserService) { }
-
-  @Post("profile/:phoneNumber")
-  async create( @Param('phoneNumber') phoneNumber: string,
-  ): Promise<UserProfileResponseDTO> {
-    
-    if(!phoneNumber){
-      throw new NotFoundException("Phone Number is required Field");
-    }
-    
-    try {
-      const data = JSON.stringify({
-        "locale": "en-us"
-      });
-
-      const config = {
-        method: 'post',
-        maxBodyLength: Infinity,
-        url: 'https://eastus.api.cognitive.microsoft.com/speaker-recognition/verification/text-independent/profiles?api-version=2021-09-05',
-        headers: {
-          'Ocp-Apim-Subscription-Key': '050acd7a1d3c4f0ab8123516e708b8f5',
-          'Content-Type': 'application/json'
-        },
-        data: data
-      };
-
-      const response = await axios.request(config);
-      console.log("response-creating profile", response.data)
-
-      const profileId = response.data.profileId;
-      const enrollmentStatus = response.data.enrollmentStatus;
-      const profileStatus = response.data.profileStatus;
-      const user: User = {
-        phoneNumber: phoneNumber,
-        profileId: profileId,
-        enrollmentStatus: enrollmentStatus,
-        profileStatus: profileStatus,
-        id: 0
-      }
-      const userProfile = await this.userService.create(user);
-
-      return {
-        profileId: userProfile.profileId,
-        phoneNumber: userProfile.phoneNumber,
-        profileStatus: profileStatus,
-        enrollmentStatus: enrollmentStatus
-      };
-
-    } catch (error) {
-      console.log("ERROR", error)
-      throw new Error("Falied to create a profile");
-    }
+  
+  @Get()
+  async getUsers(){
+    return this.userService.getAl()
   }
   @Post('enroll/:phoneNumber')
   @UseInterceptors(FileInterceptor('audio'))
@@ -71,77 +23,41 @@ export class UserController {
   ): Promise<any> {
     try {
       if (!file) {
-        throw new BadRequestException('Audio file is required');
+        throw new BadRequestException('enrollment Audio file is required');
       }
       if (!phoneNumber) {
         throw new BadRequestException('Phone Number is required');
       }
-      let userProfile;
+      let userProfile: User;
       userProfile = await this.userService.getUser(phoneNumber)
+
       if (!userProfile) {
-        const data = JSON.stringify({
-          "locale": "en-us"
-        });
-  
-        const config = {
-          method: 'post',
-          maxBodyLength: Infinity,
-          url: 'https://eastus.api.cognitive.microsoft.com/speaker-recognition/verification/text-independent/profiles?api-version=2021-09-05',
-          headers: {
-            'Ocp-Apim-Subscription-Key': '050acd7a1d3c4f0ab8123516e708b8f5',
-            'Content-Type': 'application/json'
-          },
-          data: data
-        };
-  
-        const response = await axios.request(config);
-        console.log("response-creating profile", response.data)
-  
-        const profileId = response.data.profileId;
-        const enrollmentStatus = response.data.enrollmentStatus;
-        const profileStatus = response.data.profileStatus;
-        const user: User = {
+        console.log("response-creating profile for user with Phone", phoneNumber)
+
+        const id = await this.generateProfileId(10);
+        const enrollmentStatus = "Enrolled";
+        const profileStatus = "Active";
+
+        const user: CreateUserDto = {
           phoneNumber: phoneNumber,
-          profileId: profileId,
+          profileId:id,
           enrollmentStatus: enrollmentStatus,
           profileStatus: profileStatus,
-          id: 0
+          enrolledVoice: file.buffer,
         }
-         userProfile = await this.userService.create(user);
+        userProfile = await this.userService.create(user);
       }
 
-      const data = file.buffer;
-      const config = {
-        method: 'post',
-        maxBodyLength: Infinity,
-        url: `https://eastus.api.cognitive.microsoft.com/speaker-recognition/verification/text-independent/profiles/${userProfile.profileId}/enrollments?api-version=2021-09-05&ignoreMinLength=true`,
-        headers: {
-          'Ocp-Apim-Subscription-Key': '050acd7a1d3c4f0ab8123516e708b8f5',
-          'Content-Type': 'audio/wav; codecs=audio/pcm'
-        },
-        data: data
+      const user = {
+        phoneNumber: userProfile.phoneNumber,
+        profileId: userProfile.profileId,
+        profileStatus: userProfile.profileStatus,
+        enrollmentStatus: userProfile.enrollmentStatus
+      }
+      return {
+        message: 'You have succesfully Enrolled a user',
+        user
       };
-
-      const response = await axios.request(config);
-      console.log("response", response.data);
-
-
-      const profileId = response.data.profileId;
-      const enrollmentStatus = response.data.enrollmentStatus;
-      const profileStatus = response.data.profileStatus;
-      if (enrollmentStatus === "Enrolled") {
-        const user = await this.userService.updateUserStatus(profileId);
-
-        return {
-          message: 'You have succesfully Enrolled a user',
-          data: {
-            phoneNumber,
-            profileId,
-            profileStatus: "Active",
-            enrollmentStatus
-          },
-        };
-      }
 
     } catch (error) {
       console.log("ERROR", error)
@@ -150,11 +66,9 @@ export class UserController {
   }
   @Post('verify/:phoneNumber')
   @UseInterceptors(FileInterceptor('audio'))
-
   async verifyUser(
     @Param('phoneNumber') phoneNumber: string,
     @UploadedFile() file: Express.Multer.File
-
   ) {
     try {
       if (!file) {
@@ -163,32 +77,42 @@ export class UserController {
       if (!phoneNumber) {
         throw new BadRequestException('Phone Number is required');
       }
-      const user = await this.userService.getUser(phoneNumber)
-      if (!user) {
-        return new NotFoundException("User Not Found  With Phone Number", phoneNumber)
-      }
 
-      const data = file.buffer;
+      const user = await this.userService.getUser(phoneNumber);
+      if (!user) {
+        throw new NotFoundException(`User with Phone Number ${phoneNumber} not found`);
+      }
+      const data = new FormData();
+      data.append('voice_sample1', user.enrolledVoice, { filename: 'enrolled_voice.wav' });
+      data.append('voice_sample2', file.buffer, { filename: 'user_voice.wav' });
+
       const config = {
         method: 'post',
         maxBodyLength: Infinity,
-        // url: `https://eastus.api.cognitive.microsoft.com/speaker-recognition/verification/text-independent/profiles/${user.profileId}/enrollments?api-version=2021-09-05&ignoreMinLength=true`,
-        url: `https://eastus.api.cognitive.microsoft.com/speaker-recognition/verification/text-independent/profiles/${user.profileId}:verify?api-version=2021-09-05&ignoreMinLength=true`,
+        url: 'http://127.0.0.1:5000/verify-speakers',
         headers: {
-          'Ocp-Apim-Subscription-Key': '050acd7a1d3c4f0ab8123516e708b8f5',
-          'Content-Type': 'audio/wav; codecs=audio/pcm'
+          ...data.getHeaders(),
         },
-        data: data
+        data: data,
       };
 
       const response = await axios.request(config);
-      console.log("response", response.data);
-
+      console.log('Response:', response.data);
       return response.data;
-
-    } catch (error) {
-      console.log("ERROR", error)
-      throw new InternalServerErrorException(error.response);
     }
+    catch (error) {
+      console.error('Error:', error.response ? error.response.data : error.message);
+      throw new InternalServerErrorException(error.response ? error.response.data : error.message);
+    }
+  }
+  // Function to generate a random string of specified length
+  async generateProfileId(length: number) {
+    let result = '';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const charactersLength = characters.length;
+    for (let i = 0; i < length; i++) {
+      result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
   }
 }

@@ -11,17 +11,16 @@ export class UserService {
     @InjectRepository(User)
     private userProfileRepository: Repository<User>,
   ) {}
-  async create(user:User): Promise<User> {
-    
-    const userProfile = new User();
-    userProfile.phoneNumber = user.phoneNumber;
-    userProfile.profileId= user.profileId
-    return await this.userProfileRepository.save(userProfile);
+  async create(user:CreateUserDto): Promise<User> {
+    return await this.userProfileRepository.save(user);
   }
   async getUser(phoneNumber:string) {
     return await this.userProfileRepository.findOneBy({
       phoneNumber: phoneNumber
     })
+  }
+  async getAl() {
+    return await this.userProfileRepository.find()
   }
   async updateUserStatus(profileId:string){
     const user = await this.userProfileRepository.findOneBy({
