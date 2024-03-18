@@ -89,7 +89,7 @@ export class UserController {
       const config = {
         method: 'post',
         maxBodyLength: Infinity,
-        url: 'http://127.0.0.1:5000/verify-speakers',
+        url: 'http://nvidia-speaker1-service:5000/verify-speakers',
         headers: {
           ...data.getHeaders(),
         },
