@@ -83,8 +83,8 @@ export class UserController {
         throw new NotFoundException(`User with Phone Number ${phoneNumber} not found`);
       }
       const data = new FormData();
-      data.append('voice_sample1', user.enrolledVoice, { filename: 'enrolled_voice.wav' });
-      data.append('voice_sample2', file.buffer, { filename: 'user_voice.wav' });
+      data.append('audio1', user.enrolledVoice, { filename: 'enrolled_voice.wav' });
+      data.append('audio2', file.buffer, { filename: 'user_voice.wav' });
 
       const config = {
         method: 'post',
