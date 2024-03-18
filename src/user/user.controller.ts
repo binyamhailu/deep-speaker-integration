@@ -10,9 +10,9 @@ import * as FormData from 'form-data';
 export class UserController {
 
   constructor(private readonly userService: UserService) { }
-  
+
   @Get()
-  async getUsers(){
+  async getUsers() {
     return this.userService.getAl()
   }
   @Post('enroll/:phoneNumber')
@@ -23,47 +23,45 @@ export class UserController {
   ): Promise<any> {
     try {
       if (!file) {
-        throw new BadRequestException('enrollment Audio file is required');
+        throw new BadRequestException('Enrollment audio file is required');
       }
       if (!phoneNumber) {
-        throw new BadRequestException('Phone Number is required');
+        throw new BadRequestException('Phone number is required');
       }
-      let userProfile: User;
-      userProfile = await this.userService.getUser(phoneNumber)
+
+      let userProfile: User = await this.userService.getUser(phoneNumber);
 
       if (!userProfile) {
-        console.log("response-creating profile for user with Phone", phoneNumber)
-
         const id = await this.generateProfileId(10);
         const enrollmentStatus = "Enrolled";
         const profileStatus = "Active";
 
         const user: CreateUserDto = {
           phoneNumber: phoneNumber,
-          profileId:id,
+          profileId: id,
           enrollmentStatus: enrollmentStatus,
           profileStatus: profileStatus,
           enrolledVoice: file.buffer,
-        }
+        };
+
         userProfile = await this.userService.create(user);
+      } else {
+
+        userProfile.enrolledVoice = file.buffer;
+        userProfile = await this.userService.update(userProfile);
       }
 
-      const user = {
-        phoneNumber: userProfile.phoneNumber,
-        profileId: userProfile.profileId,
-        profileStatus: userProfile.profileStatus,
-        enrollmentStatus: userProfile.enrollmentStatus
-      }
       return {
-        message: 'You have succesfully Enrolled a user',
-        user
+        message: 'You have successfully enrolled a user',
+        user: userProfile,
       };
 
     } catch (error) {
-      console.log("ERROR", error)
-      throw new InternalServerErrorException(error.response);
+      console.error("ERROR", error);
+      throw new InternalServerErrorException(error.message);
     }
   }
+
   @Post('verify/:phoneNumber')
   @UseInterceptors(FileInterceptor('audio'))
   async verifyUser(
