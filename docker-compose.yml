@@ -28,7 +28,7 @@ services:
       POSTGRES_DB: mydatabase
 
   deep-speaker:
-    image: binwelbeck/deep-speaker
+    image: binwelbeck/nvidia-speaker1
     restart: always
     ports:
       - '5000:5000'
